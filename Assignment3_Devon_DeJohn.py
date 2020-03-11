@@ -1,3 +1,4 @@
+import os
 import pathlib
 import numpy as np
 import pandas as pd
@@ -8,7 +9,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn import preprocessing
 
 
-class AnimalData:
+class ImageData:
     def __init__(self, path):
         self.image_set = []
         self.label_set = []
@@ -24,30 +25,13 @@ class AnimalData:
             self.label_dct[i] = v.name
 
         for img_path in data_set.rglob("*.jpg"):
-            print(img_path,)
-            img = cv2.imread(img_path)
-            img = cv2.resize(img, (32,32), interpolation=cv2.INTER_AREA)
             lbl = img_path.parent.stem
+            img = cv2.imread(str(img_path))
+            img = cv2.resize(img, (32,32), interpolation=cv2.INTER_AREA)
             self.image_set.append(img)
             self.label_set.append(label_num[lbl])
-
 # end
 
-#     def load(self, path):
-#         with os.scandir(data_path) as images:
-#             for label_num, class_type in enumerate(images):
-#                 label_dct[label_num] = class_type.name
-#                 sub_dir = f"{data_path}/{class_type.name}"
-#                 with os.scandir(sub_dir) as class_samples:
-#                     for sample in class_samples:
-#                         img_path = f"{sub_dir}/{sample.name}"
-#                         img = cv2.imread(img_path)
-#                         img = cv2.resize(img, (32,32), interpolation=cv2.INTER_AREA)
-#                         image_set.append(img)
-#                         label_set.append(label_num)
 
-
-# end
-
-animal_data = AnimalData("datasets/animals")
+animal_data = ImageData("datasets/animals")
 print(animal_data.label_dct,)
