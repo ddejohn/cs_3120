@@ -3,90 +3,83 @@ import pathlib
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+
 from plotly.subplots import make_subplots
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from random import shuffle
 
 
-class ImageData:
+class ImageKNN:
     def __init__(self, path):
-        self.imgs = []
-        self.labels = []
-        self.label_keys = {}
-        self.train = Data()
-        self.test = Data()
-        self.validation = Data()
-        self.load_data(path)
-        self.reshape_data()
+        self.labels = {}
+        self.train, self.test, self.validate = self.load_data(path)
 
     def load_data(self, path):
         label_num = {}
         data_set = pathlib.Path(path)
+        raw_data = []
 
+        # create the label lookup dict for verifcation later
         for i, v in enumerate(data_set.iterdir()):
             label_num[v.name] = i
-            self.label_keys[i] = v.name
+            self.labels[i] = v.name
 
+        # read images
         for img_path in data_set.rglob("*.jpg"):
-            lbl = img_path.parent.stem
+            lbl = label_num[str(img_path.parent.stem)]
             img = cv2.imread(str(img_path))
             img = cv2.resize(img, (32,32), interpolation=cv2.INTER_AREA)
-            self.imgs.append(img)
-            self.labels.append(label_num[lbl])
+
+            # label the sample and append to temp data list
+            sample = np.append(lbl, img.flatten())
+            raw_data.append(sample)
+
+        # partition and package the data (*_ ensures safe unpacking)
+        train, test, validate, *_ = Data.partition(raw_data, 0.7, 0.1)
+        return Data(train), Data(test), Data(validate)
+# end
+
+
+class Data:
+    """A basic data structure"""
+    def __init__(self, data: list):
+        self.X = []
+        self.Y = []
+        for d in data:
+            self.Y.append(d[0])
+            self.X.append(d[1:])
     
-    def reshape_data(self):
-        data = np.array(self.imgs)
-        data = data.reshape(data.shape[0], 3072)
-        self.imgs = data
+    @staticmethod
+    def flatten(data: list):
+        """Recursively flatten data into a 1D list"""
+        data = sum(data, [])
+        if not isinstance(data[0], list):
+            return data
+        return Data.flatten(data)
 
-    def train_test_validate(self):
-        trainX, testX, trainY, testY = train_test_split(
-            self.imgs, self.labels, train_size=0.7)
-        self.train.X = trainX
-        self.train.Y = trainY
-        
-        tX, tY, vX, vY = train_test_split(testX, testY, train_size=0.2)
-        
-        self.test.X = testX
-        self.test.Y = testY
+    @staticmethod
+    def partition(data: list, *args: float):
+        """Shuffle 'data', then partition by the proportions given in 'args'
 
+        Automatically creates a final partition if sum(args) != 1.0
+        """
+        shuffle(data)
+        n = len(data)
+        parts = []
+        rem, a, b = n, 0, 0
+        for p in args:
+            b = a + int(n*p)
+            parts.append(data[a:b])
+            rem -= (b - a)
+            a = b
+        parts.append(data[-rem:])
+        return parts
 # end
 
 
 
-class Data:
-    def __init__(self):
-        self.X = []
-        self.Y = []
 
-
-# animal_data = ImageData("datasets/animals")
+animal_data = ImageKNN("datasets/animals")
 # print(animal_data.label_keys,)
-
-
-
-def flatten(data):
-    return sum(data, [])
-
-
-
-def partition(data, *args):
-    n = len(data) 
-    partitioned_data = []
-    p1 = 0
-    p2 = 0
-    rem = n
-    for p in args:
-        p2 = p1 + int(n*p)
-        rem -= (p2 - p1)
-        part = data[p1:p2]
-        p1 = p2
-        partitioned_data.append(part)
-    print(rem)
-    partitioned_data.append(data[-rem:])
-    return partitioned_data
-
-
-x = [*range(1237)]
-partition(x, *(0.4, 0.3, 0.2, 0.1))
