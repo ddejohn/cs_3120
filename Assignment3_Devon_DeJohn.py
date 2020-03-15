@@ -2,6 +2,7 @@ import cv2
 import pathlib
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report as crep
 from random import shuffle
 
 
@@ -97,4 +98,14 @@ class Data:
 # end
 
 animals = ImageKNN("datasets/animals")
-animals.predict()
+
+Y_test = animals.test.Y
+Y_predict = animals.model.predict(animals.test.X)
+
+report = crep(
+    Y_test, Y_predict,
+    labels=[*animals.labels.keys()],
+    target_names=[*animals.labels.values()]
+)
+
+print(report,)
