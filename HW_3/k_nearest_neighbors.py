@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report as crep
 from random import shuffle
 
 
-class ImageKNN(KNeighborsClassifier):
+class Model(KNeighborsClassifier):
     """A container for a KNN classifier"""
     def __init__(self, path: str, dims=(32,32)):
         super().__init__()
@@ -61,7 +61,7 @@ class ImageKNN(KNeighborsClassifier):
             target_names=[*self.labels.values()]
         )
 
-        return f"\n{report}"
+        print(f"\n{report}")
     # end
 # end
 
@@ -107,10 +107,3 @@ class Data:
         return parts
     # end
 # end
-
-
-animals = ImageKNN("data/animals")
-print(animals.report())
-
-animals.retrain({"p": 2, "n_neighbors": 7, "weights": "distance"})
-print(animals.report())
