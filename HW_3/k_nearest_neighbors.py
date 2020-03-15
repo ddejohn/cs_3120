@@ -109,7 +109,7 @@ class Data:
 # end
 
 
-animals = ImageKNN("datasets/animals")
+animals = ImageKNN("data/animals")
 print(animals.report())
 
 animals.retrain({"p": 2, "n_neighbors": 7, "weights": "distance"})
