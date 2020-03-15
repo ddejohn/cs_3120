@@ -6,19 +6,18 @@ from sklearn.metrics import classification_report as crep
 from random import shuffle
 
 
-class ImageKNN:
+class ImageKNN(KNeighborsClassifier):
     """A container for a KNN classifier"""
     def __init__(self, path: str, dims=(32,32)):
+        super().__init__()
         self.labels = {}
         self.train, self.test, self.validate = self.load_data(path, dims)
-        self.model = KNeighborsClassifier(p=1, weights="distance")
-        self.model.fit(self.train.X, self.train.Y)
+        self.fit(self.train.X, self.train.Y)
     # end
 
     def load_data(self, path: str, dims: tuple) -> tuple:
         """Load all .jpg files from all subdirectories in 'path' 
-        and then preprocess, label, and partition the data.
-        """
+        and then preprocess, label, and partition the data."""
         label_num = {}
         data_set = pathlib.Path(path)
         raw_data = []
@@ -27,6 +26,7 @@ class ImageKNN:
         for i, v in enumerate(data_set.iterdir()):
             label_num[v.name] = i
             self.labels[i] = v.name
+        # end
 
         # read images
         for img_path in data_set.rglob("*.jpg"):
@@ -37,26 +37,31 @@ class ImageKNN:
             # label the sample and append to temp data list
             sample = np.append(lbl, img)
             raw_data.append(sample)
+        # end
 
         # partition and package the data (*_ ensures safe unpacking)
         train, test, validate, *_ = Data.partition(raw_data, 0.7, 0.1)
         return Data(train), Data(test), Data(validate)
     # end
 
-    def predict(self) -> float:
-        """Predict the label for some input data"""
-        Y = self.model.predict(self.test.X)
-        score = 0
-        for testY, trueY in zip(Y, self.test.Y):
-            score += int(testY == trueY)
-        return score/len(Y)
+    def retrain(self, kwargs):
+        """Retrain the KNN model with parameters from 'kwargs'."""
+        super().__init__(**kwargs)
+        self.fit(self.train.X, self.train.Y)
     # end
 
-    def retrain(self, kwargs):
-        """Retrain the KNN model with parameters from 'kwargs'.
-        """
-        self.model = KNeighborsClassifier(**kwargs)
-        self.model.fit(self.train.X, self.train.Y)
+    def report(self):
+        """Generate a classification report."""
+        Y_test = self.test.Y
+        Y_predict = self.predict(self.test.X)
+
+        report = crep(
+            Y_test, Y_predict,
+            labels=[*self.labels.keys()],
+            target_names=[*self.labels.values()]
+        )
+
+        return f"\n{report}"
     # end
 # end
 
@@ -69,6 +74,8 @@ class Data:
         for d in data:
             self.Y.append(d[0])
             self.X.append(d[1:])
+        # end
+    # end
     
     @staticmethod
     def flatten(data: list) -> list:
@@ -77,35 +84,33 @@ class Data:
         if not isinstance(data[0], list):
             return data
         return Data.flatten(data)
+    # end
 
     @staticmethod
     def partition(data: list, *args: float) -> list:
         """Shuffle 'data' and then partition by 'args' proportions.
 
-        Automatically creates a final partition if sum(args) != 1.0
-        """
+        Automatically creates a final partition if sum(args) != 1.0"""
         shuffle(data)
         n = len(data)
-        parts = []
         rem, a, b = n, 0, 0
+        parts = []
+
         for p in args:
             b = a + int(n*p)
             parts.append(data[a:b])
             rem -= (b - a)
             a = b
+        # end
+
         parts.append(data[-rem:])
         return parts
+    # end
 # end
 
+
 animals = ImageKNN("datasets/animals")
+print(animals.report())
 
-Y_test = animals.test.Y
-Y_predict = animals.model.predict(animals.test.X)
-
-report = crep(
-    Y_test, Y_predict,
-    labels=[*animals.labels.keys()],
-    target_names=[*animals.labels.values()]
-)
-
-print("\n", report,)
+animals.retrain({"p": 2, "n_neighbors": 7, "weights": "distance"})
+print(animals.report())
