@@ -29,7 +29,7 @@ class Model:
         ]
 
         self.data = pd.read_csv(
-            "data/pima-indians-diabetes-database.csv",
+            "../data/pima-indians-diabetes-database.csv",
             header=None,
             names=cols
         )
