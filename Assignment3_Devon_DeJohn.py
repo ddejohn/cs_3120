@@ -1,22 +1,23 @@
 import cv2
 import pathlib
 import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-
-from plotly.subplots import make_subplots
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
 from random import shuffle
 
 
 class ImageKNN:
-    def __init__(self, path):
+    """A container for a KNN classifier"""
+    def __init__(self, path: str, dims=(32,32)):
         self.labels = {}
-        self.train, self.test, self.validate = self.load_data(path)
+        self.train, self.test, self.validate = self.load_data(path, dims)
+        self.model = KNeighborsClassifier(p=1, weights="distance")
+        self.model.fit(self.train.X, self.train.Y)
+    # end
 
-    def load_data(self, path):
+    def load_data(self, path: str, dims: tuple) -> tuple:
+        """Load all .jpg files from all subdirectories in 'path' 
+        and then preprocess, label, and partition the data.
+        """
         label_num = {}
         data_set = pathlib.Path(path)
         raw_data = []
@@ -30,15 +31,32 @@ class ImageKNN:
         for img_path in data_set.rglob("*.jpg"):
             lbl = label_num[str(img_path.parent.stem)]
             img = cv2.imread(str(img_path))
-            img = cv2.resize(img, (32,32), interpolation=cv2.INTER_AREA)
+            img = cv2.resize(img, dims, interpolation=cv2.INTER_AREA)
 
             # label the sample and append to temp data list
-            sample = np.append(lbl, img.flatten())
+            sample = np.append(lbl, img)
             raw_data.append(sample)
 
         # partition and package the data (*_ ensures safe unpacking)
         train, test, validate, *_ = Data.partition(raw_data, 0.7, 0.1)
         return Data(train), Data(test), Data(validate)
+    # end
+
+    def predict(self) -> float:
+        """Predict the label for some input data"""
+        Y = self.model.predict(self.test.X)
+        score = 0
+        for testY, trueY in zip(Y, self.test.Y):
+            score += int(testY == trueY)
+        return score/len(Y)
+    # end
+
+    def retrain(self, kwargs):
+        """Retrain the KNN model with parameters from 'kwargs'.
+        """
+        self.model = KNeighborsClassifier(**kwargs)
+        self.model.fit(self.train.X, self.train.Y)
+    # end
 # end
 
 
@@ -52,16 +70,16 @@ class Data:
             self.X.append(d[1:])
     
     @staticmethod
-    def flatten(data: list):
-        """Recursively flatten data into a 1D list"""
+    def flatten(data: list) -> list:
+        """Recursively flatten 'data' into a 1D list"""
         data = sum(data, [])
         if not isinstance(data[0], list):
             return data
         return Data.flatten(data)
 
     @staticmethod
-    def partition(data: list, *args: float):
-        """Shuffle 'data', then partition by the proportions given in 'args'
+    def partition(data: list, *args: float) -> list:
+        """Shuffle 'data' and then partition by 'args' proportions.
 
         Automatically creates a final partition if sum(args) != 1.0
         """
@@ -78,8 +96,5 @@ class Data:
         return parts
 # end
 
-
-
-
-animal_data = ImageKNN("datasets/animals")
-# print(animal_data.label_keys,)
+animals = ImageKNN("datasets/animals")
+animals.predict()
