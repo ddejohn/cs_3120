@@ -108,4 +108,4 @@ report = crep(
     target_names=[*animals.labels.values()]
 )
 
-print(report,)
+print("\n", report,)
