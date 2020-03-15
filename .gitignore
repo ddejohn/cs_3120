@@ -1,4 +1,3 @@
 .ipynb_checkpoints
 /datasets
-*.ipynb
 __pycache__
