@@ -44,6 +44,7 @@ def grad(X, Y, w_lr=1e-3, b_lr=5e-2, tol=1e-5):
 
         if (abs(w_err) < tol) & (abs(b_err) < tol):
             break
+    # end
 
     return b_path, w_path, num_iter
 # end
@@ -55,9 +56,11 @@ class Line2D:
     def __init__(self, m=urv(), b=urv()):
         self.m = m
         self.b = b
+    # end
 
     def __call__(self, x):
         return x*self.m + self.b
+    # end
 # end
 
 
@@ -98,6 +101,7 @@ class Model:
 
         self.b = self.b_path[-1]
         self.w = self.w_path[-1]
+    # end
 
 
     def reg(self, x):
@@ -171,6 +175,7 @@ class Model:
         )
 
         fig.show()
+    # end
 
 
     def error_plot(self):
@@ -248,3 +253,5 @@ class Model:
         )
 
         fig.show()
+    # end
+# end
