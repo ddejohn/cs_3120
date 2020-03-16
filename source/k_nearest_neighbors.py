@@ -86,13 +86,17 @@ class Model(KNeighborsClassifier):
         self.fit(self.train.X, self.train.Y)
     # end
 
-    def report(self):
+    def report(self, rep="test"):
         """Generate a classification report."""
-        Y_test = self.test.Y
-        Y_predict = self.predict(self.test.X)
+        if rep == "test":
+            Y_true = self.test.Y
+            Y_predict = self.predict(self.test.X)
+        else:
+            Y_true = self.validate.Y
+            Y_predict = self.predict(self.validate.X)
 
         report = crep(
-            Y_test, Y_predict,
+            Y_true, Y_predict,
             labels=[*self.labels.keys()],
             target_names=[*self.labels.values()]
         )
@@ -146,7 +150,7 @@ class Model(KNeighborsClassifier):
         Data.acc_plot(accs)
 
         table = sorted(table, key=lambda x: x[4])
-        print(tabulate(table, header))
+        print(tabulate(table, header, tablefmt="github"))
     # end
 # end
 
