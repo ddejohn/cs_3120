@@ -2,11 +2,11 @@ import cv2
 import pathlib
 import random
 import numpy as np
+import plotly.graph_objects as go
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report as crep
 from itertools import product
 from tabulate import tabulate
-from IPython.display import display, Markdown
 
 
 DEFAULT = {
@@ -21,7 +21,7 @@ class Model(KNeighborsClassifier):
     """A container for a KNN classifier"""
     def __init__(self, path: str):
         super().__init__(**DEFAULT)
-        self.dims = (32,32)
+        self.dims = (8,8)
         self.labels = {}
         self.path = path
         self.parts = ["train", "test", "validate"]
@@ -29,7 +29,7 @@ class Model(KNeighborsClassifier):
         self.fit(self.train.X, self.train.Y)
     # end
 
-    def part_print(self):
+    def datasets(self):
         partitions = [self.train, self.test, self.validate]
         n = sum(len(p) for p in partitions)
         for i, p in enumerate(partitions):
@@ -74,7 +74,7 @@ class Model(KNeighborsClassifier):
         self.validate = Data(validate)
     # end
 
-    def retrain(self, kwargs=DEFAULT, dims=(32,32)):
+    def retrain(self, dims, kwargs=DEFAULT):
         """Retrain the KNN model with parameters from 'kwargs'."""
         super().__init__(**kwargs)
 
@@ -100,33 +100,51 @@ class Model(KNeighborsClassifier):
     # end
 
     def cycle_params(self):
-        print("*** WARNING ***")
-        print("THIS IS GOING TO TAKE A LONG TIME")
+        print("*** WARNING: THIS IS GOING TO TAKE A LONG TIME ***")
 
         table = []
         header = ["neighbors", "metric", "weights", "dims", "accuracy"]
 
-        neighbors = [3, 5, 7, 9]
-        metrics = ["manhattan", "euclidean", "minkowski"]
+        # dims = [8, 16, 32, 64]
+        dims = [8, 16, 32]
+        # neighbors = [3, 5, 7, 9]
+        neighbors = [3, 5, 7]
+        metrics = ["manhattan", "euclidean"]
         weights = ["uniform", "distance"]
-        dims = [(16,16), (32,32), (64,64)]
 
-        for p in product(neighbors, metrics, weights, dims):
-            n, m, w, d = p
+        accs = []
+
+        prod = product(dims, neighbors, metrics, weights)
+        card = len(neighbors)*len(metrics)*len(weights)*len(dims)
+
+        for i, p in enumerate(prod, 1):
+            x = int(round(48*i/card, 2))
+            prog = f"[{('x'*x).ljust(48, '.')}]"
+            print(prog, end="\r", flush=True)
+            d, n, m, w = p
             params = {
                 "n_neighbors": n,
                 "metric": m,
                 "weights": w,
                 "n_jobs": -1
             }
-            self.retrain(kwargs=params, dims=d)
-            score = self.score(self.test.X, self.test.Y)
-            table.append([n, m, w, d, round(score, 5)])
+            self.retrain(kwargs=params, dims=(d,d))
+            score = round(self.score(self.test.X, self.test.Y), 4)
+            accs.append({(dims.index(d), neighbors.index(n)): score})
+            table.append([n, m, w, (d,d), score])
         # end
 
         table = sorted(table, key=lambda x: x[4])
-        table = tabulate(table, header, tablefmt="github")
-        display(Markdown(table))
+        print(tabulate(table, header))
+
+        z = np.zeros((len(dims),len(neighbors)))
+        for tup in accs:
+            x, y, z = tup
+            z[x, y] = z
+        # end
+
+        print(z,)
+        Data.acc_plot((dims, neighbors, z))
     # end
 # end
 
@@ -167,5 +185,40 @@ class Data:
 
         parts.append(data[-rem:])
         return parts
+    # end
+
+    @staticmethod
+    def acc_plot(data: tuple):
+        x, y, z = data
+        contour = go.Contour(
+            x=x, y=y, z=z,
+            contours=dict(
+                showlabels=True,
+                labelfont=dict(
+                    size=12,
+                    color="gray"
+                ),
+            ),
+            colorscale=[
+                [0.0, "mediumturquoise"],
+                [0.5, "gold"],
+                [1.0, "lightsalmon"]
+            ],
+            showscale=False,
+            line_width=0
+        )
+
+        ttl = f"<b>Accuracy vs dimensions vs neighbors"
+        fig = go.Figure(
+            data=contour,
+            layout=go.Layout(
+                width=950, height=950,
+                title=ttl,
+                xaxis_title="dimensions",
+                yaxis_title="neighbors"
+            )
+        )
+
+        fig.show()
     # end
 # end
