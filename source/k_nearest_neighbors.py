@@ -3,6 +3,7 @@ import pathlib
 import random
 import numpy as np
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report as crep
 from itertools import product
@@ -100,27 +101,36 @@ class Model(KNeighborsClassifier):
     # end
 
     def cycle_params(self):
-        print("*** WARNING: THIS IS GOING TO TAKE A LONG TIME ***")
+        # print("*** WARNING: THIS IS GOING TO TAKE A LONG TIME ***")
 
         table = []
         header = ["neighbors", "metric", "weights", "dims", "accuracy"]
 
-        # dims = [8, 16, 32, 64]
-        dims = [8, 16, 32]
-        # neighbors = [3, 5, 7, 9]
-        neighbors = [3, 5, 7]
+        # dims = [8, 16, 32]
+        # neighbors = [3, 5, 7]
+        dims = [8, 16, 32, 64]
+        neighbors = [3, 5, 7, 9]
         metrics = ["manhattan", "euclidean"]
         weights = ["uniform", "distance"]
 
-        accs = []
+        accs = {
+            "manhattan": {
+                "uniform": [],
+                "distance": [],
+            },
+            "euclidean": {
+                "uniform": [],
+                "distance": [],
+            }
+        }
 
         prod = product(dims, neighbors, metrics, weights)
         card = len(neighbors)*len(metrics)*len(weights)*len(dims)
 
         for i, p in enumerate(prod, 1):
-            x = int(round(48*i/card, 2))
-            prog = f"[{('x'*x).ljust(48, '.')}]"
-            print(prog, end="\r", flush=True)
+            # x = int(round(48*i/card, 2))
+            # prog = f"[{('x'*x).ljust(48, '.')}]"
+            # print(prog, end="\r", flush=True)
             d, n, m, w = p
             params = {
                 "n_neighbors": n,
@@ -130,21 +140,13 @@ class Model(KNeighborsClassifier):
             }
             self.retrain(kwargs=params, dims=(d,d))
             score = round(self.score(self.test.X, self.test.Y), 4)
-            accs.append({(dims.index(d), neighbors.index(n)): score})
+            accs[m][w].append((dims.index(d), neighbors.index(n), score))
             table.append([n, m, w, (d,d), score])
         # end
+        Data.acc_plot(accs)
 
         table = sorted(table, key=lambda x: x[4])
         print(tabulate(table, header))
-
-        z = np.zeros((len(dims),len(neighbors)))
-        for tup in accs:
-            x, y, z = tup
-            z[x, y] = z
-        # end
-
-        print(z,)
-        Data.acc_plot((dims, neighbors, z))
     # end
 # end
 
@@ -188,10 +190,63 @@ class Data:
     # end
 
     @staticmethod
-    def acc_plot(data: tuple):
-        x, y, z = data
+    def acc_plot(data: dict):
+        fig = make_subplots(
+            rows=2, cols=2,
+            row_titles=["manhattan", "euclidean"],
+            column_titles=["uniform", "distance"],
+            vertical_spacing=0.05,
+            horizontal_spacing=0.05,
+            x_title="vote weight"
+            y_title="metric",
+        )
+
+        for i, d in enumerate(data.values(), 1):
+            for j, z in enumerate(d.values(), 1):
+                contour = Data.make_contour(z)
+                fig.add_trace(contour, row=i, col=j)
+                fig.update_xaxes(
+                    row=i, col=j,
+                    tickvals=[8, 16, 32, 64]
+                )
+                fig.update_yaxes(
+                    row=i, col=j,
+                    tickvals=[3, 5, 7, 9]
+                )
+            # end
+        # end
+
+        fig.update_xaxes(
+            row=2, col=1,
+            title_text="dimensions"
+        )
+
+        fig.update_yaxes(
+            row=2, col=1,
+            title_text="neighbors"
+        )
+
+        ttl = f"<b>Accuracy vs dimensions vs neighbors</b>"
+        fig.update_layout(
+            width=950, height=950,
+            title=ttl,
+        )
+
+        fig.show()
+    # end
+
+    @staticmethod
+    def make_contour(data: list):
+        z = np.zeros((4, 4))
+        for tup in data:
+            x, y, acc = tup
+
+            # numpy arrays are stored in column order, so switch x and y
+            z[y, x] = acc
+        # end
+
         contour = go.Contour(
-            x=x, y=y, z=z,
+            z=z, x=[8,16,32,64], y=[3,5,7,9],
             contours=dict(
                 showlabels=True,
                 labelfont=dict(
@@ -200,25 +255,13 @@ class Data:
                 ),
             ),
             colorscale=[
-                [0.0, "mediumturquoise"],
+                [0.0, "lightsalmon"],
                 [0.5, "gold"],
-                [1.0, "lightsalmon"]
+                [1.0, "mediumturquoise"]
             ],
             showscale=False,
             line_width=0
         )
 
-        ttl = f"<b>Accuracy vs dimensions vs neighbors"
-        fig = go.Figure(
-            data=contour,
-            layout=go.Layout(
-                width=950, height=950,
-                title=ttl,
-                xaxis_title="dimensions",
-                yaxis_title="neighbors"
-            )
-        )
-
-        fig.show()
-    # end
+        return contour
 # end
