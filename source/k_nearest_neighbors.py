@@ -197,8 +197,8 @@ class Data:
             column_titles=["uniform", "distance"],
             vertical_spacing=0.05,
             horizontal_spacing=0.05,
-            x_title="vote weight"
-            y_title="metric",
+            x_title="vote weight",
+            y_title="distance metric",
         )
 
         for i, d in enumerate(data.values(), 1):
