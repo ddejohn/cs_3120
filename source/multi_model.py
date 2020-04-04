@@ -131,3 +131,8 @@ class Model:
         print(report)
     # end
 # end
+
+model = Model("../data/mnist.csv")
+knn = KNeighborsClassifier()
+knn.fit(model.train.X, model.train.Y)
+model.report(knn, model.test)
