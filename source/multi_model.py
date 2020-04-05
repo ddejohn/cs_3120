@@ -115,16 +115,16 @@ class Model:
         # end
     # end
 
-    def report(self, mod, dataset: Data):
+    def report(self, mod, X, Y):
         """Generate a classification report."""
 
-        Y_true = dataset.Y
-        Y_pred = mod.predict(dataset.X)
+        Y_true = Y
+        Y_pred = mod.predict(X)
 
         report = classification_report(
             Y_true, Y_pred,
-            labels=[*self.labels.keys()],
-            target_names=[*self.labels.values()]
+            # labels=[*map(str, self.labels.keys())],
+            # target_names=[*self.labels.values()]
         )
 
         print(report)
