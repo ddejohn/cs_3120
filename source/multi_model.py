@@ -140,8 +140,7 @@ def process_data(X: list, n: int) -> list:
 # end
 
 
-def compare_models(model: Model) -> dict:
-    comps = [8, 16, 32, 64]
+def compare_models(model: Model, comps=[8, 16, 32, 64]) -> dict:
     results = {
         "support vector machine": [],
         "k-nearest neighbors": [],
