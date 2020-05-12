@@ -17,7 +17,7 @@ def line_drawing(event, x, y, flags, param):
         cv2.line(
             img, (posx, posy), (x, y),
             color=(255,255,255),
-            thickness=10
+            thickness=20
         )
 
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -32,7 +32,7 @@ def line_drawing(event, x, y, flags, param):
         draw()
 
 
-img = np.zeros((448,448,1))
+img = np.zeros((512,512,1))
 cv2.namedWindow("draw a number")
 cv2.setMouseCallback("draw a number", line_drawing)
 
@@ -47,7 +47,7 @@ while(1):
         X = X.reshape(1, 28, 28, 1)
         prediction = np.argmax(model.predict(X))
         print(f"\nLooks like a {prediction}!\n")
-        img = np.zeros((448,448,1))
+        img = np.zeros((512,512,1))
 
 
 cv2.destroyAllWindows()
