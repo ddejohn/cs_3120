@@ -2,12 +2,14 @@
 Devon DeJohn, Spring 2020
 
 ## Requirements
-This project uses `keras`, `tensorflow`, `numpy`, and `opencv`.
+In order to run these files you will need `keras`, `tensorflow`, `numpy`, `opencv`, and the abililty to read and write digits.
 
 ## To run
-Wherever you unzipped the files, simply run `number_predictor.py` in your terminal of choice.
+Wherever you unzipped the files, simply run `number_predictor.py` in your terminal.
 
-A window will appear in which you can draw on a square black background. To exit the program, press `esc` on your keyboard. To have the predictor guess which number you drew, press `enter`. The prediction will print in the terminal.
+A window will appear in which you can draw on a black background. Draw a digit, press `enter`, and the model will guess which digit you drew. The prediction will print in the terminal.
+
+To exit the program, press `esc` on your keyboard.
 
 ## Improvements
 This model sucks at identifying zeros.
