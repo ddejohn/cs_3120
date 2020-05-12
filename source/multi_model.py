@@ -3,11 +3,13 @@ import random
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from sklearn import preprocessing
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
+from sklearn.decomposition import PCA
 
 
 class Data:
@@ -32,7 +34,7 @@ class Data:
 
         Automatically creates a final partition if sum(args) != 1.0"""
         n = len(data)
-        # random.seed(42)
+        random.seed(12)
         random.shuffle(data)
         args = [*args, *filter(lambda x: x > 0, [round(1.0-sum(args), 5)])]
         a, b = 0, 0
@@ -58,7 +60,6 @@ class Model:
         self.test = Data(test)
         self.validate = Data(validate)
 
-        # self.datasets()
         self.model = None
     # end
 
@@ -96,9 +97,7 @@ class Model:
         data = []
         for row in dcopy:
             *x, y = row
-            x = [*map(float, x)]
-            y = label_num[y]
-            data.append([*x, y])
+            data.append([*map(float, x), label_num[y]])
         # end
 
         return data
@@ -116,18 +115,60 @@ class Model:
         # end
     # end
 
-    def report(self, mod, dataset: Data):
+    def report(self, mod, X, Y):
         """Generate a classification report."""
 
-        Y_true = dataset.Y
-        Y_pred = mod.predict(dataset.X)
+        Y_true = Y
+        Y_pred = mod.predict(X)
 
         report = classification_report(
             Y_true, Y_pred,
-            labels=[*self.labels.keys()],
-            target_names=[*self.labels.values()]
+            # labels=[*map(str, self.labels.keys())],
+            # target_names=[*self.labels.values()]
         )
 
         print(report)
     # end
+# end
+
+
+def process_data(X: list, n: int) -> list:
+    """Scale and perform PCA on 'X'"""
+    pca = PCA(n_components=n)
+    X = preprocessing.scale(X)
+    return pca.fit_transform(X)
+# end
+
+
+def compare_models(model: Model, comps=[8, 16, 32, 64]) -> dict:
+    results = {
+        "support vector machine": [],
+        "k-nearest neighbors": [],
+        "logistic regression": [],
+        "decision tree": []
+    }
+    classifiers = {
+        "support vector machine": SVC(),
+        "k-nearest neighbors": KNeighborsClassifier(
+            weights="distance", metric="manhattan", n_jobs=-1
+        ),
+        "logistic regression": LogisticRegression(max_iter=1000),
+        "decision tree": DecisionTreeClassifier()
+    }
+    for name, classifier in classifiers.items():
+        for n in comps:
+            xt = process_data(model.train.X, n)
+            yt = model.train.Y
+
+            xv = process_data(model.validate.X, n)
+            yv = model.validate.Y
+
+            classifier.fit(xt, yt)
+            score = round(classifier.score(xv, yv), 5)
+
+            res = f"PCA {n}: ".rjust(16) + f"{score}"
+            results[name].append(res)
+        # end
+    # end
+    return results
 # end
