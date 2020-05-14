@@ -2,7 +2,7 @@
 Devon DeJohn, Spring 2020
 
 ## Requirements
-In order to run these files you will need `keras`, `tensorflow`, `numpy`, `opencv`, and the abililty to read and write digits.
+In order to run these files you will need `keras`, `tensorflow`, `numpy`, `opencv`, and the ability to read and write digits.
 
 ## To run
 Simply run `digit_classifier.py` in a terminal at the directory where you place the files after downloading/cloning. 
